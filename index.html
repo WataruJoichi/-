@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>限界度診断ツール 〜あなたの心の処方箋〜</title>
+    <style>
+        /* 基本デザイン・目に優しいクリーム基調 */
+        :root {
+            --bg-color: #fcfaf2;
+            --text-color: #2b2b2b;
+            --main-color: #5d7fa3;
+            --accent-green: #6ba8a0;
+            --accent-yellow: #e6b422;
+            --accent-red: #c94a47;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--main-color);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        /* カードの共通スタイル */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            padding: 30px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        /* 質問画面の制御 */
+        .question-card {
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--main-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        /* 選択肢ボタン */
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: #f7f9fa;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-color);
+        }
+
+        .option-btn:hover {
+            background-color: #edf2f7;
+            border-color: var(--main-color);
+            transform: translateY(-1px);
+        }
+
+        /* 診断結果画面 */
+        #result-screen {
+            display: none;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .result-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 3px dashed #e2e8f0;
+            margin-bottom: 30px;
+        }
+
+        .result-score {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .bg-a { background-color: var(--accent-green); }
+        .bg-b { background-color: var(--accent-yellow); }
+        .bg-c { background-color: var(--accent-red); }
+
+        h2, h3 {
+            color: var(--main-color);
+            border-left: 5px solid var(--main-color);
+            padding-left: 10px;
+        }
+
+        h2 { font-size: 1.4rem; margin-top: 40px; }
+        h3 { font-size: 1.1rem; margin-top: 25px; border-left-color: #a0aec0; }
+
+        .prescription-box {
+            background-color: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--main-color);
+        }
+
+        .tag-red { color: var(--accent-red); font-weight: bold; }
+        .tag-green { color: var(--accent-green); font-weight: bold; }
+
+        blockquote {
+            background: #fffaf0;
+            border-left: 4px solid var(--accent-yellow);
+            margin: 20px 0;
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            font-weight: bold;
+        }
+
+        .emergency-quote {
+            border-left: 4px solid var(--accent-red) !important;
+            background: #fff5f5 !important;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* 出口導線ボタン */
+        .cta-container {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            width: 100%;
+            max-width: 400px;
+            padding: 18px 30px;
+            background-color: var(--accent-red);
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            box-shadow: 0 6px 16px rgba(201, 74, 71, 0.3);
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(201, 74, 71, 0.5);
+        }
+
+        .cta-btn.btn-a {
+            background-color: var(--accent-green);
+            box-shadow: 0 6px 16px rgba(107, 168, 160, 0.3);
+        }
+        .cta-btn.btn-a:hover {
+            box-shadow: 0 8px 20px rgba(107, 168, 160, 0.5);
+        }
+
+        .cta-btn.btn-b {
+            background-color: var(--accent-yellow);
+            box-shadow: 0 6px 16px rgba(230, 180, 34, 0.3);
+        }
+        .cta-btn.btn-b:hover {
+            box-shadow: 0 8px 20px rgba(230, 180, 34, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>限界度診断ツール</h1>
+        <div class="subtitle">〜100の講座に基づくココロの処方箋〜</div>
+    </header>
+
+    <div id="start-screen" class="card" style="text-align: center;">
+        <p class="question-text">日々の仕事、本当にお疲れ様です。<br>今のあなたの「エネルギー残量」を測定し、科学的アプローチに基づいた専用の処方箋をお出しします。</p>
+        <button class="option-btn" style="text-align: center; width: 200px; margin: 0 auto; background: var(--main-color); color: white; font-weight: bold;" onclick="startDiagnosis()">診断を始める</button>
+    </div>
+
+    <div id="question-container"></div>
+
+    <div id="result-screen" class="card">
+        <div class="result-header">
+            <div id="result-status-badge" class="status-badge"></div>
+            <div id="result-score" class="result-score"></div>
+        </div>
+        <div id="result-text"></div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            q: "Q1. 朝、目が覚めて最初に頭に浮かぶ言葉は？",
+            options: [
+                { text: "a. 「よし、今日もやるか」（または「あ〜、あと5分…」）", score: 1 },
+                { text: "b. 「…（無言で深いおため息）」", score: 2 },
+                { text: "c. 「このまま家が爆発して、会社が休みにならないかな」", score: 3 },
+                { text: "d. 「記憶にございません（気づいたらデスクにいる）」", score: 4 }
+            ]
+        },
+        {
+            q: "Q2. パソコンの「ゴミ箱」を空にするとき、どう感じる？",
+            options: [
+                { text: "a. 画面がスッキリして気持ちいいな。", score: 1 },
+                { text: "b. 私の脳内のデータも、こうやって一瞬で消去できたらいいのに。", score: 2 },
+                { text: "c. このゴミ箱の中に、今すぐ自分をドラッグ＆ドロップしたい。", score: 3 },
+                { text: "d. ゴミ箱を空にするクリックすら、タスクに思えて触れない。", score: 4 }
+            ]
+        },
+        {
+            q: "Q3. 最近、SNSや他人の情報を見ているときのあなたの心境は？",
+            options: [
+                { text: "a. 友人の投稿や最新のトレンド情報を楽しくチェックしている。", score: 1 },
+                { text: "b. キラキラした他人のキャリアを見て、ウッと自己否定に陥りそうになる。", score: 2 },
+                { text: "c. 画面を見る光すらまぶしくてスマホを裏返すか、脳内ラジオがネガティブを垂れ流している。", score: 3 },
+                { text: "d. SNSを開く指の力すら残っておらず、ただスマホのロック画面（時計）を5分間見つめ続けて気絶している。", score: 4 }
+            ]
+        },
+        {
+            q: "Q4. 上司から「ちょっといい？」と声をかけられた瞬間の脳内アラートは？",
+            options: [
+                { text: "a. 「あ、あの案件の件かな？」と冷静に対応。", score: 1 },
+                { text: "b. 「え、私なんかミスしたっけ…？」と心臓がバクバクする。", score: 2 },
+                { text: "c. 「あ、詰んだ。今ここで土下座するか、窓から飛び降りるかの二択だな」", score: 3 },
+                { text: "d. 白目を剥いて、脳内BGMに『タイタニック』の沈没シーンの曲を流す。", score: 4 }
+            ]
+        },
+        {
+            q: "Q5. 最近、夜ベッドに入ったときのあなたの「脳内」は？",
+            options: [
+                { text: "a. 今日も一日よく頑張った、と及第点を出してスッと眠れる。", score: 1 },
+                { text: "b. 「なぜ眠れないんだろう」「明日の仕事に響く」という焦りで脳が覚醒している。", score: 2 },
+                { text: "c. 過去への後悔や未来への不安という雑念が溢れかえり、注意散漫で脳が激しく疲弊している。", score: 3 },
+                { text: "d. 脳のバッテリーが完全な「空」なのに、強迫観念で体を無理やり動かしている。", score: 4 }
+            ]
+        },
+        {
+            q: "Q6. 仕事でミスをしたり、少し厳しい口調で指摘をされたとき、あなたのマインドはどうなる？",
+            options: [
+                { text: "a. 「上手くいかない方法を発見したデータだ」と科学者のように捉え、次へ進む。", score: 1 },
+                { text: "b. 「また失敗した…みんな私のこと使えないと思ってる」という自動思考が芋づる式に湧く。", score: 2 },
+                { text: "c. 「仕事でミスをした自分は無能なゴミ人間だ」とミスラベルを貼って自分を追い詰める。", score: 3 },
+                { text: "d. パニックで頭が真っ白になり、自分の席でフリーズして動けなくなる。", score: 4 }
+            ]
+        },
+        {
+            q: "Q7. コンビニで買うご飯の「選び方」に変化はあった？",
+            options: [
+                { text: "a. カロリーや栄養バランス、食べたいものを考えて選ぶ。", score: 1 },
+                { text: "b. ストレス発散で、やたら甘いものや激辛なものなど脳に直接くるものばかりカゴに入れている。", score: 2 },
+                { text: "c. 何が食べたいか本気で分からず、気づいたら菓子パン1個か、何も買わずに店を出ている。", score: 3 },
+                { text: "d. 「咀嚼（そしゃく）」すら面倒なので、ゼリー飲料を吸い込んでいる。", score: 4 }
+            ]
+        },
+        {
+            q: "Q8. 仕事中の「周囲のピリつき」に対する、あなたのアンテナ感度は？",
+            options: [
+                { text: "a. 「あ、先輩が忙しそうだから質問は後回しにしよう」と冷静に情況を把握できる。", score: 1 },
+                { text: "b. 誰かのキーボードを叩く音が強くなるだけで、「自分が何か怒らせたかな」と過剰に怯える。", score: 2 },
+                { text: "c. 周りがトラブル対応で大焦りしている最中に、空気の読めない私用な話しかけをしてしまう（またはその気力もない）。", score: 3 },
+                { text: "d. オフィスのガヤガヤ感そのものが脳への凶器。座っているだけで動悸がする。", score: 4 }
+            ]
+        },
+        {
+            q: "Q9. 「宝くじで3億円当たったらどうする？」という妄想、最近した？",
+            options: [
+                { text: "a. 「家を買って、旅行に行って、残りは投資に回して…」と夢が広がる。", score: 1 },
+                { text: "b. 「速攻で退職届を出して、3ヶ月くらい誰とも連絡を取らずに寝る」の一択。", score: 2 },
+                { text: "c. 妄想するだけのクリエイティビティ（想像力）すら残っていない。無。", score: 3 },
+                { text: "d. 3億円より、今すぐ「合法的に明日会社が休みになる権利」が欲しい。", score: 4 }
+            ]
+        },
+        {
+            q: "Q10. 明日の朝、目が覚めたら「突然、声が出なくなっていた」としたら？",
+            options: [
+                { text: "a. 「やばい！病院行かなきゃ！会社に連絡しなきゃ！」と焦る。", score: 1 },
+                { text: "b. 「…あ、これで大手を振って会社休めるかも」と、一瞬ホッとする。", score: 2 },
+                { text: "c. 「神様ありがとう！！！」と、声の出ない喉で全力で歓喜のダンスを踊る。", score: 3 },
+                { text: "d. 声が出なくても、テキストで働かされる未来が見えて絶望する。", score: 4 }
+            ]
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let totalScore = 0;
+
+    function initQuestions() {
+        const container = document.getElementById('question-container');
+        questions.forEach((qData, index) => {
+            // 進行状況を1問目(index=0)で10%、10問目(index=9)で100%になるように修正
+            const progress = Math.round(((index + 1) / questions.length) * 100);
+            let html = `
+                <div id="q-card-${index}" class="card question-card">
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
+                    <div class="question-text">${qData.q}</div>
+                    <div class="options-list">
+            `;
+            qData.options.forEach(opt => {
+                html += `<button class="option-btn" onclick="nextQuestion(${opt.score})">${opt.text}</button>`;
+            });
+            html += `</div></div>`;
+            container.innerHTML += html;
+        });
+    }
+
+    function startDiagnosis() {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('q-card-0').classList.add('active');
+    }
+
+    function nextQuestion(score) {
+        totalScore += score;
+        document.getElementById(`q-card-${currentQuestionIndex}`).classList.remove('active');
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < questions.length) {
+            document.getElementById(`q-card-${currentQuestionIndex}`).classList.add('active');
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('question-container').style.display = 'none';
+        const resultScreen = document.getElementById('result-screen');
+        const badge = document.getElementById('result-status-badge');
+        const scoreDisplay = document.getElementById('result-score');
+        const textDisplay = document.getElementById('result-text');
+
+        resultScreen.style.display = 'block';
+
+        const affiliateLinks = {
+            typeA: "https://example.com/remote-work-shinsotsu-tenshoku", 
+            typeB: "https://example.com/shoubyouteate-support-shinsai",  
+            typeC: "https://example.com/taishokudaikou-shield-service"   
+        };
+
+        if (totalScore <= 18) {
+            badge.className = "status-badge bg-a";
+            badge.innerText = "段階A：限界度30%（サボり下手タイプ）";
+            scoreDisplay.innerHTML = `<span style="color:var(--accent-green);">${totalScore * 2.5}%</span>`;
+            
+            textDisplay.innerHTML = `
+                <h2>1. 現在のあなたのステータス分析</h2>
+                <p>あなたは現在、致命的な破綻はしていないものの、真面目さが裏目に出て「サボり下手」の沼にハマりかけている状態です。周囲の状況を把握して自発的に動く「主体性」や、チームのルールを遵守する「規律性」が非常に高い優秀な人ですが、その責任感の強さゆえに「どんなに体調が悪くても、社会人なら絶対に遅刻するべきではない」というべき思考のレンズや完璧主義の罠に脳のリソースを削られています。
+                「まだ大丈夫」は黄色信号。「正しい手の抜き方」はサボることではなく、自分の限られたエネルギーを成果が最大化する場所に集中させるための『戦略的資源配分』です。今ここで適切にブレーキを踏み、角を立てずに自分の身を守る技術（環境調整）をストックしましょう。</p>
+
+                <h2>2. 100の講座から選ばれた、今週のあなた専用「3つの処方箋」</h2>
+                <div class="prescription-box">
+                    <span class="tag-green">💊 処方箋①：完璧主義を破壊する「60点GO」の技術</span>
+                    <p><strong>【今すぐやめること】</strong>：すべてのタスクを100点満点でこなそうと一人で仕事を抱え込むこと。</p>
+                    <p><strong>【今日からできる小さな一歩】</strong>：1つのタスクだけ、いつもより30分早く切り上げて「60点」の段階で一度提出してみる。</p>
+                    <p>100点にするために時間をかけて納期ギリギリに出すよりも、60点の段階で一度見せる方が手戻りが少なく、結果的に全体のクオリティが高まります。それ以上の加点は「趣味」と割り切り、必要最低限のゴール（合格ライン）を最初から言語化しておきましょう。「完璧な遅れ」より「不完全な迅速」が正解です。</p>
+                </div>
+
+                <div class="prescription-box">
+                    <span class="tag-green">💊 処方箋②：定時30分前の急な依頼をサラリと調整する「DESC法」</span>
+                    <p><strong>【今すぐやめること】</strong>：無茶な仕事を頼まれた時に、条件反射で「はい」と我慢して引き受けること。</p>
+                    <p><strong>【今日からできる小さな一歩】</strong>：何かを依頼されたら「〇〇の件ですね、確認します」と、あえて1秒の間を置いて落ち着いた声で話す。</p>
+                    <p>キャパシティを超えた引き受けは、最終的に納期遅れやクオリティ低下を招き、周囲に迷惑をかけます。断る行為は非協力的な悪ではなく、現在のリソースをベースにした「対等な意思表示」であり、質を担保するための誠実な対応です。客観的な事実（D）を伝え、自分の状況（E）を表現し、代替案（S）を提案するDESC法を意識して、角を立てずに自分の身を守りましょう。</p>
+                </div>
+
+                <div class="prescription-box">
+                    <span class="tag-green">💊 処方箋③：暴走を避けてスマートに周りを頼る「未経験者の特権」</span>
+                    <p><strong>【今すぐやめること】</strong>：「自分1人でやらなきゃ」と他部署や先輩を巻き込むことを恐れてキャパオーバーになること。</p>
+                    <p><strong>【今日からできる小さな一歩】</strong>：質問する前に、手元のメモに「結論」と「相手の得意分野へのリスペクト」を3行書く。</p>
+                    <p>上司への報告なしに自己判断で進めて失敗するのは、主体性ではなくただの「身勝手な単独行動（暴走）」です。新人や未経験者の最大の武器は、「分からないので教えてください！」と堂々と言える特権にあります。自分で限界まで考えて手を動かした（主体性）上で、足りない部分を相手への敬意を持って助けてもらう（働きかけ力）方程式を使えば、周囲は喜んであなたの強力なサポーターになってくれます。</p>
+                </div>
+
+                <h2>3. 心が軽くなる、これだけ読めばいい「3行お守り」</h2>
+                <blockquote>
+                    1. 「他人の不機嫌」は相手の排泄物と同じ。あなたが責任を持って片付ける（機嫌を取る）義務は一切ない。<br>
+                    2. 100点満点を続ける必要はない。仕事中にあえて「いつもと違うルート」を通るだけで、脳の柔軟性が復活する。<br>
+                    3. 断る行為は人格の否定ではなく、現在のリソースに基づく誠実な防衛戦略である。
+                </blockquote>
+
+                <h2>4. 次のステップ：あなたの未来を守る「自動防具」</h2>
+                <div class="cta-container">
+                    <p>まだ動ける今のうちに、「自分のペースを守りながら、理不尽なオフィスの人間に付き合わなくていい環境」をストックしておきませんか？フルリモート特化の転職サイトを眺め、「いざとなればいつでも別の選択肢がある」というお守りを持つことが、現在の職場を気楽に乗り切る最大の精神安定剤になります。</p>
+                    <a href="${affiliateLinks.typeA}" target="_blank" class="cta-btn btn-a">👉 【無料】フルリモート特化の求人情報をのぞいてみる</a>
+                </div>
+            `;
+        } else if (totalScore <= 30) {
+            badge.className = "status-badge bg-b";
+            badge.innerText = "段階B：限界度70%（日曜・月曜絶望タイプ）";
+            scoreDisplay.innerHTML = `<span style="color:var(--accent-yellow);">${Math.min(totalScore * 2.5, 99)}%</span>`;
+
+            textDisplay.innerHTML = `
+                <h2>1. 現在のあなたのステータス分析</h2>
+                <p>心身からかなり明確な不調のサイン（日曜日や月曜朝の吐き気、お風呂の億劫さ、脳の疲弊、夜間の覚醒など）が出ています。脳のエネルギーを激しく消費する「マルチタスク（タスクスイッチング）」の呪いにかかっており、出来事と感情の間に一瞬で挟まる「解釈（自動思考）」のバグによって脳が極度の過活動状態に陥っています。
+                真面目なあなたはおそらく「自分の意志や気合が足りないせいだ」「仕事でミスをする自分は無能なゴミ人間だ」とミスラベルを貼って自分を追い詰めていますが、それは脳の防衛本能（エラー）に過ぎません。今は前向きに頑張る時ではなく、思考の歪んだレンズを外し、合法的にサボりながら「1つのことに没頭して脳を休める」回復フェーズです。</p>
+
+                <h2>2. 100の講座から選ばれた、今週のあなた専用「3つの処方箋」</h2>
+                <div class="prescription-box">
+                    <span style="color:var(--accent-yellow); font-weight:bold;">💊 処方箋①：脳内のお化けを言葉で退治する「エクスプレッシブ・ライティング」</span>
+                    <p><strong>【今すぐやめること】</strong>：不安や悩みを頭の中に閉じ込めて、正体のわからない「モヤモヤの渋滞」を大きく膨らませること。</p>
+                    <p><strong>【今日からできる小さな一歩】</strong>：5分間だけタイマーをセットし、誰にも見せないノートやスマホのメモ帳に、今の本当の気持ちをぐちゃぐちゃのまま書き殴る。</p>
+                    <p>悩み事を紙に書き写すのは、パソコンの不要なファイルを削除して脳の「空き容量」を増やすようなものです。感情を言葉にして外に出すと、巨大に見えた「見えないお化け」はただの「文字」に変わり、脳の興奮が落ち着いて感情のブレーキが効くようになります。書き終わったら破棄して証拠隠滅すればOK、脳が「これは紙に預けた」と判断して睡眠の質も深まります。</p>
+                </div>
+
+                <div class="prescription-box">
+                    <span style="color:var(--accent-yellow); font-weight:bold;">💊 処方箋②：眠れない夜の脳の空回りを止める「ステルス脱力＆コンパッション」</span>
+                    <p><strong>【今すぐやめること】</strong>：布団の中で「眠らなきゃ」と焦り、眠れない自分を責めて脳を極度の過活動状態にさせること。</p>
+                    <p><strong>【今日からできる小さな一歩】</strong>：布団の中で横になったまま、顔の筋肉を一度ギュッとしてパッと緩めるか、足の指を10回グーパーする。</p>
+                    <p>最も脳を疲れさせるのは自己批判です。無意識に入っている顎や眉間の力を強制的に抜き、足の指を動かして頭にのぼった血（興奮）を下半書へ引き下げましょう。出来事と感情の間に一瞬で挟まる「解釈（自動思考）」のバグを、コンパッションフレーズで「今日一日を生き抜いた。それだけで自分に及第点を出していい」と唱え、自律神経をリセットしてください。</p>
+                </div>
+
+                <div class="prescription-box">
+                    <span style="color:var(--accent-yellow); font-weight:bold;">💊 処方箋③：脳のバグ眼鏡をリアルタイムに外す「自動思考のラベリング」</span>
+                    <p><strong>【今すぐやめること】</strong>：何かの出来事が起きた瞬間に勝手に頭に浮かぶ「解釈（自動思考）」を、絶対的な事実だと思い込んで負のスパイラルに落ちること。</p>
+                    <p><strong>【今日からできる小さな一歩】</strong>：胸がざわついたりイライラした時、「あ、また【結論ジャンプ】の眼鏡をかけているな」と頭の中で歪みのラベルを貼ってみる。</p>
+                    <p>脳は生存本能から、どうしても最悪の事態を想定するネガティブな自動思考を垂れ流しがちです。しかし、思考は単なる「脳のクセ」であり、あなた自身ではありません。頭の中のモヤモヤを「環境」「思考」「感情」「身体の反応」「行動」に細かく分解してノートに書き出すことで、自分と歪んだ思考を切り離し、心に静かな余白を作りましょう。</p>
+                </div>
+
+                <h2>3. 心が軽くなる、これだけ読めばいい「3行お守り」</h2>
+                <blockquote>
+                    1. 思考やネガティブな感情は、脳の歪んだレンズが見せているただの「クセ」に過ぎず、あなた自身（事実）ではない。<br>
+                    2. 1日5分のマインドフルネス瞑想のように、湧き上がる雑念を「いま、雑念が湧いたな」と他人事のようにただ客観的に観察するだけで脳の筋トレになる。<br>
+                    3. 調子に波があるのは人間として自然なこと。書けない日も「それだけ疲れている貴重なデータ」としてバツをつけない。
+                </blockquote>
+
+                <h2>4. 次のステップ：あなたの未来を守る「自動防具」</h2>
+                <div class="cta-container">
+                    <p>今のあなたには、転職活動の履歴書を書いたり面接に行ったりするパワーすら残っていません。まずは国から認められた制度を使い、合法的に会社を長期間休んで給付金をもらいながら、すり減った自律神経をリセットするフェーズです。申請の複雑な手続きを丸投げできる専門サポートに頼ってください。</p>
+                    <a href="${affiliateLinks.typeB}" target="_blank" class="cta-btn btn-b">👉 合法的に人生を休む「傷病手当金・給付金サポート」の無料相談</a>
+                </div>
+            `;
+        } else {
+            badge.className = "status-badge bg-c";
+            badge.innerText = "段階C：限界度120%（緊急避難タイプ）";
+            scoreDisplay.innerHTML = `<span style="color:var(--accent-red);">120%</span>`;
+
+            textDisplay.innerHTML = `
+                <h2>1. 現在のあなたのステータス分析</h2>
+                <p>完全にレッドラインを越えています。脳が正常な判断を下せないほど摩耗しており、これ以上その過酷な環境に留まることは生命の危険を伴います。
+                あなたは1ミリも悪くありません。ミスや遅れを個人の責任にするような環境や、1人で仕事を抱え込ませて脳をフリーズさせる組織の仕組み自体が100%悪いです。今すぐすべてのタスクや責任を投げ捨てて、自分の心と命を守るためにその場から全力で逃げる「緊急避難フェーズ」です。長文を「構造的に要約」して読むエネルギーすら残っていないはずですので、以下の処方箋（3行お守り）だけを目に焼き付けて、あとは意識をシャットダウンしてください。</p>
+
+                <h2>2. 100の講座から選ばれた、今週のあなた専用「3つの処方箋」</h2>
+                <blockquote class="emergency-quote">
+                    🚨 【超重要】長文は読まなくていい。この3行だけ見て。<br><br>
+                    * 【今すぐやめること】：明日、あのオフィスに行くこと。<br>
+                    * 【今日からできる小さな一歩】：今すぐPCやスマホの電源を切り、布団を頭まですっぽり被って目を閉じる。<br><br>
+                    1. あなたは1ミリも悪くない。ミスや遅れを個人の責任にするような環境や、あなたを追い詰める仕組みが100%悪い。<br>
+                    2. 心が完全に壊れてしまう前に、まず実験（業務）の手を止めてその場から全力で逃げることこそが、あなたに今最も必要な最優先の初期対応（科学者マインド）である。<br>
+                    3. 世の中には、あなたが命や健康、参考書やデータを削ってまで守らなければならない仕事など、ただの1つも存在しない。
+                </blockquote>
+
+                <h2>3. 心が軽くなる、これだけ読めばいい「3行お守り」</h2>
+                <blockquote>
+                    1. あなたの存在や能力の否定に聴こえる上司のトゲは、相手が自分の不機嫌を処理できない未熟さ（排泄物）が原因であり、100%無関係である。<br>
+                    2. 万が一のために「半年〜1年分の生活防衛資金」さえ確保すれば、理不尽な環境から身を守りいつでも逃げ出せる最強の「盾」になる。<br>
+                    3. 自分の苦手を把握することは、次の環境調整において「絶対に避けたいブラック環境」を完全回避して長く生き残るための、立派な防衛戦略である。
+                </blockquote>
+
+                <h2>4. 次のステップ：あなたの未来を守る "自動防具"</h2>
+                <div class="cta-container">
+                    <p>もう1秒もあのオフィスに行く必要はありませんし、上司の顔を見る必要も、退職の引き止めに怯える必要もありません。明日からのあなたの出社、連絡、手続きのすべてを「LINE1本ですべてシャットアウト」してくれる最強の盾を置いておきます。あとはスマホを切って泥のように眠ってください。</p>
+                    <a href="${affiliateLinks.typeC}" target="_blank" class="cta-btn">👉 【最強の盾】明日から会社に行かなくてよくなる退職代行</a>
+                </div>
+            `;
+        }
+    }
+
+    window.onload = function() {
+        initQuestions();
+    };
+</script>
+
+</body>
+</html>
